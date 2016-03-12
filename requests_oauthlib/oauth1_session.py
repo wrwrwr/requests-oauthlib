@@ -121,6 +121,7 @@ class OAuth1Session(requests.Session):
             verifier=None,
             client_class=None,
             force_include_body=False,
+            force_exclude_body=False,
             **kwargs):
         """Construct the OAuth 1 session.
 
@@ -155,6 +156,8 @@ class OAuth1Session(requests.Session):
                              `requests_oauthlib.OAuth1` instead of the default
         :param force_include_body: Always include the request body in the
                                    signature creation.
+        :param force_exclude_body: Always exclude the request body from the
+                                   signature creation.
         :param **kwargs: Additional keyword arguments passed to `OAuth1`
         """
         super(OAuth1Session, self).__init__()
@@ -169,6 +172,7 @@ class OAuth1Session(requests.Session):
                 verifier=verifier,
                 client_class=client_class,
                 force_include_body=force_include_body,
+                force_exclude_body=force_exclude_body,
                 **kwargs)
         self.auth = self._client
 

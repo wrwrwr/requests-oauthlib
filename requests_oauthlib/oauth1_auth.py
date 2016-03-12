@@ -37,6 +37,7 @@ class OAuth1(AuthBase):
             decoding='utf-8',
             client_class=None,
             force_include_body=False,
+            force_exclude_body=False,
             **kwargs):
 
         try:
@@ -47,6 +48,7 @@ class OAuth1(AuthBase):
         client_class = client_class or self.client_class
 
         self.force_include_body = force_include_body
+        self.force_exclude_body = force_exclude_body
 
         self.client = client_class(client_key, client_secret, resource_owner_key,
             resource_owner_secret, callback_uri, signature_method,
@@ -71,21 +73,23 @@ class OAuth1(AuthBase):
 
         is_form_encoded = (CONTENT_TYPE_FORM_URLENCODED in content_type)
 
-        log.debug('Including body in call to sign: %s',
-                  is_form_encoded or self.force_include_body)
-
         if is_form_encoded:
             r.headers['Content-Type'] = CONTENT_TYPE_FORM_URLENCODED
-            r.url, headers, r.body = self.client.sign(
-                unicode(r.url), unicode(r.method), r.body or '', r.headers)
-        elif self.force_include_body:
-            # To allow custom clients to work on non form encoded bodies.
+
+        if (self.force_include_body or
+                            (not self.force_exclude_body and is_form_encoded)):
+            log.debug('Including body in call to sign')
             r.url, headers, r.body = self.client.sign(
                 unicode(r.url), unicode(r.method), r.body or '', r.headers)
         else:
-            # Omit body data in the signing of non form-encoded requests
+            log.debug('Excluding body from call to sign')
+            r_headers = r.headers.copy()
+            if is_form_encoded:
+                del r_headers['Content-Type']
             r.url, headers, _ = self.client.sign(
-                unicode(r.url), unicode(r.method), None, r.headers)
+                unicode(r.url), unicode(r.method), None, r_headers)
+            if is_form_encoded:
+                headers['Content-Type'] = CONTENT_TYPE_FORM_URLENCODED
 
         r.prepare_headers(headers)
         r.url = to_native_string(r.url)
